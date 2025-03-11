@@ -103,25 +103,37 @@ const AuthForm = () => {
 
       if (authError) throw authError;
 
-      // 2. Create company record in a transaction
+      // 2. Check if a company with this domain already exists
       if (authData.user) {
-        // Extract domain from email for company domain verification
         const emailDomain = values.email.split("@")[1];
 
-        const { error: companyError } = await supabase
+        // Check if company exists with this domain
+        const { data: existingCompany } = await supabase
           .from("companies")
-          .insert([
-            {
-              name: values.companyName,
-              created_by: authData.user.id,
-              domain: emailDomain, // Store the domain for future user verification
-              updated_at: new Date().toISOString(),
-            },
-          ]);
+          .select("id")
+          .eq("domain", emailDomain)
+          .maybeSingle();
 
-        if (companyError) {
-          console.error("Company creation error:", companyError);
-          throw new Error("Failed to create company. Please try again.");
+        if (!existingCompany) {
+          // No existing company with this domain, create a new one
+          const { error: companyError } = await supabase
+            .from("companies")
+            .insert([
+              {
+                name: values.companyName,
+                created_by: authData.user.id,
+                domain: emailDomain,
+                updated_at: new Date().toISOString(),
+              },
+            ]);
+
+          if (companyError) {
+            console.error("Company creation error:", companyError);
+            // If it's a duplicate domain error, we can proceed
+            if (!companyError.message.includes("duplicate")) {
+              throw new Error("Failed to create company. Please try again.");
+            }
+          }
         }
 
         // Success message and redirect

@@ -68,130 +68,133 @@ const Home: React.FC<HomeProps> = ({ className }) => {
   };
 
   // Dashboard layout with sidebar and header
-  const DashboardLayout = ({ children }: { children: React.ReactNode }) => (
-    <div className={cn("flex flex-col h-screen bg-background", className)}>
-      <Header
-        isDarkMode={isDarkMode}
-        onToggleTheme={toggleTheme}
-        onLogout={handleLogout}
-      />
-
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={toggleSidebar}
-        />
-
-        <main className="flex-1 overflow-hidden">{children}</main>
-      </div>
-    </div>
-  );
 
   // If we're on a dashboard route, wrap the content in the dashboard layout
   if (isDashboardRoute) {
     return (
-      <DashboardLayout>
-        <Routes>
-          <Route
-            path="/dashboard"
-            element={
-              <div className="p-6">
-                <h1 className="text-2xl font-bold">Dashboard</h1>
-              </div>
-            }
+      <div className={cn("flex flex-col h-screen bg-background", className)}>
+        <Header
+          isDarkMode={isDarkMode}
+          onToggleTheme={toggleTheme}
+          onLogout={handleLogout}
+        />
+
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={toggleSidebar}
           />
-          <Route path="/form-builder" element={<FormBuilderCanvas />} />
-          <Route
-            path="/inspections"
-            element={
-              <div className="p-6">
-                <h1 className="text-2xl font-bold">Inspections</h1>
-              </div>
-            }
-          />
-          <Route
-            path="/inspections/templates"
-            element={
-              <div className="p-6">
-                <h1 className="text-2xl font-bold">Inspection Templates</h1>
-              </div>
-            }
-          />
-          <Route
-            path="/inspections/scheduled"
-            element={
-              <div className="p-6">
-                <h1 className="text-2xl font-bold">Scheduled Inspections</h1>
-              </div>
-            }
-          />
-          <Route
-            path="/incidents"
-            element={
-              <div className="p-6">
-                <h1 className="text-2xl font-bold">Incidents</h1>
-              </div>
-            }
-          />
-          <Route
-            path="/audits"
-            element={
-              <div className="p-6">
-                <h1 className="text-2xl font-bold">Audits</h1>
-              </div>
-            }
-          />
-          <Route
-            path="/training"
-            element={
-              <div className="p-6">
-                <h1 className="text-2xl font-bold">Training</h1>
-              </div>
-            }
-          />
-          <Route
-            path="/calendar"
-            element={
-              <div className="p-6">
-                <h1 className="text-2xl font-bold">Calendar</h1>
-              </div>
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              <div className="p-6">
-                <h1 className="text-2xl font-bold">Reports</h1>
-              </div>
-            }
-          />
-          <Route
-            path="/team"
-            element={
-              <div className="p-6">
-                <h1 className="text-2xl font-bold">Team Members</h1>
-              </div>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <div className="p-6">
-                <h1 className="text-2xl font-bold">Settings</h1>
-              </div>
-            }
-          />
-          <Route
-            path="/help"
-            element={
-              <div className="p-6">
-                <h1 className="text-2xl font-bold">Help & Support</h1>
-              </div>
-            }
-          />
-          <Route path="*" element={<Navigate to="/dashboard" />} />
-        </Routes>
-      </DashboardLayout>
+
+          <main className="flex-1 overflow-hidden">
+            <Routes>
+              <Route
+                path="/dashboard"
+                element={
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold">Dashboard</h1>
+                  </div>
+                }
+              />
+              <Route path="/form-builder" element={<FormBuilderCanvas />} />
+              <Route
+                path="/inspections"
+                element={
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold">Inspections</h1>
+                  </div>
+                }
+              />
+              <Route
+                path="/inspections/templates"
+                element={
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold">Inspection Templates</h1>
+                  </div>
+                }
+              />
+              <Route
+                path="/inspections/scheduled"
+                element={
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold">
+                      Scheduled Inspections
+                    </h1>
+                  </div>
+                }
+              />
+              <Route
+                path="/incidents"
+                element={
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold">Incidents</h1>
+                  </div>
+                }
+              />
+              <Route
+                path="/audits"
+                element={
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold">Audits</h1>
+                  </div>
+                }
+              />
+              <Route
+                path="/training"
+                element={
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold">Training</h1>
+                  </div>
+                }
+              />
+              <Route
+                path="/calendar"
+                element={
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold">Calendar</h1>
+                  </div>
+                }
+              />
+              <Route
+                path="/reports"
+                element={
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold">Reports</h1>
+                  </div>
+                }
+              />
+              <Route
+                path="/team"
+                element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    {React.createElement(
+                      React.lazy(() => import("./team/TeamManagement")),
+                    )}
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    {React.createElement(
+                      React.lazy(() => import("./profile/UserProfile")),
+                    )}
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="/help"
+                element={
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold">Help & Support</h1>
+                  </div>
+                }
+              />
+              <Route path="*" element={<Navigate to="/dashboard" />} />
+            </Routes>
+          </main>
+        </div>
+      </div>
     );
   }
 

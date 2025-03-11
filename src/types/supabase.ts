@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string | null
+          domain: string
           id: string
           name: string
           updated_at: string | null
@@ -20,6 +21,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by?: string | null
+          domain: string
           id?: string
           name: string
           updated_at?: string | null
@@ -27,6 +29,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string | null
+          domain?: string
           id?: string
           name?: string
           updated_at?: string | null
@@ -38,6 +41,7 @@ export type Database = {
           company_id: string | null
           created_at: string | null
           id: string
+          is_active: boolean | null
           role: string
           user_id: string | null
         }
@@ -45,6 +49,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           role?: string
           user_id?: string | null
         }
@@ -52,6 +57,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           role?: string
           user_id?: string | null
         }
@@ -261,29 +267,35 @@ export type Database = {
       user_profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           created_at: string | null
           email: string
           full_name: string | null
           id: string
           job_title: string | null
+          phone: string | null
           updated_at: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string | null
           email: string
           full_name?: string | null
           id: string
           job_title?: string | null
+          phone?: string | null
           updated_at?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string | null
           email?: string
           full_name?: string | null
           id?: string
           job_title?: string | null
+          phone?: string | null
           updated_at?: string | null
         }
         Relationships: []
