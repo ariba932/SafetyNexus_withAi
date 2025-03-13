@@ -59,6 +59,8 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
   const [formId, setFormId] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const [pendingChanges, setPendingChanges] = useState<boolean>(false);
 
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -74,14 +76,52 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
 
         setUserId(user.id);
 
-        const { data: companyMember } = await supabase
+        const { data: companyMember, error } = await supabase
           .from("company_members")
           .select("company_id")
           .eq("user_id", user.id)
           .single();
 
-        if (companyMember) {
+        if (companyMember && companyMember.company_id) {
           setCompanyId(companyMember.company_id);
+        } else {
+          // If no company found, create a default company for the user
+          const { data: newCompany, error: companyError } = await supabase
+            .from("companies")
+            .insert([
+              {
+                name: "My Company",
+                created_by: user.id,
+                domain: "default.com",
+                updated_at: new Date().toISOString(),
+              },
+            ])
+            .select()
+            .single();
+
+          if (companyError) {
+            console.error("Error creating company:", companyError);
+            return;
+          }
+
+          // Associate user with the new company
+          const { error: memberError } = await supabase
+            .from("company_members")
+            .insert([
+              {
+                user_id: user.id,
+                company_id: newCompany.id,
+                role: "Owner/Admin",
+                is_active: true,
+              },
+            ]);
+
+          if (memberError) {
+            console.error("Error creating company member:", memberError);
+            return;
+          }
+
+          setCompanyId(newCompany.id);
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -91,14 +131,71 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
     fetchUserAndCompany();
   }, []);
 
-  // Load form if ID is provided
+  // Add online/offline detection
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast({
+        title: "Online",
+        description: "You are now online. Syncing changes...",
+      });
+
+      // Sync any pending changes
+      if (formId) {
+        handleSaveForm();
+      }
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast({
+        title: "Offline",
+        description: "You are now offline. Changes will be saved locally.",
+      });
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [formId]);
+
   useEffect(() => {
     if (id) {
       loadForm(id);
     } else if (!showNewFormDialog && companyId && userId) {
       setShowNewFormDialog(true);
     }
-  }, [id, companyId, userId]);
+
+    // Check for pending form data when coming back online
+    if (isOnline) {
+      const pendingFormData = localStorage.getItem("pendingFormData");
+      if (pendingFormData) {
+        try {
+          const formData = JSON.parse(pendingFormData);
+          if (formData.formId) {
+            // We have a pending form to sync
+            setFormId(formData.formId);
+            setFormTitle(formData.title);
+            setFormDescription(formData.description);
+            setFields(formData.fields);
+            setPendingChanges(true);
+
+            toast({
+              title: "Pending Changes",
+              description:
+                "Found locally saved changes. Click Save to sync with server.",
+            });
+          }
+        } catch (error) {
+          console.error("Error parsing pending form data:", error);
+        }
+      }
+    }
+  }, [id, companyId, userId, isOnline]);
 
   // Load form data
   const loadForm = async (formId: string) => {
@@ -135,30 +232,17 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
   };
 
   // Handle field deletion
-  const handleFieldDelete = async (fieldId: string) => {
-    // If the form is saved in the database, delete the field from the database
-    if (formId) {
-      try {
-        await deleteFormField(fieldId);
-      } catch (error) {
-        console.error("Error deleting field:", error);
-        toast({
-          title: "Error",
-          description: "Failed to delete field",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
+  const handleFieldDelete = (fieldId: string) => {
+    // Only update local state, don't push to backend until save
     setFields(fields.filter((field) => field.id !== fieldId));
     if (selectedFieldId === fieldId) {
       setSelectedFieldId(null);
     }
+    setPendingChanges(true);
   };
 
   // Handle field movement
-  const handleFieldMove = async (fieldId: string, direction: "up" | "down") => {
+  const handleFieldMove = (fieldId: string, direction: "up" | "down") => {
     const index = fields.findIndex((field) => field.id === fieldId);
     if (index === -1) return;
 
@@ -186,62 +270,18 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
     }
 
     setFields(newFields);
-
-    // If the form is saved in the database, update the field order
-    if (formId) {
-      try {
-        // Update both fields with new order_index
-        if (direction === "up" && index > 0) {
-          await updateFormField(newFields[index - 1].id, {
-            order_index: newFields[index - 1].order_index,
-          });
-          await updateFormField(newFields[index].id, {
-            order_index: newFields[index].order_index,
-          });
-        } else if (direction === "down" && index < fields.length - 1) {
-          await updateFormField(newFields[index].id, {
-            order_index: newFields[index].order_index,
-          });
-          await updateFormField(newFields[index + 1].id, {
-            order_index: newFields[index + 1].order_index,
-          });
-        }
-      } catch (error) {
-        console.error("Error updating field order:", error);
-        toast({
-          title: "Error",
-          description: "Failed to update field order",
-          variant: "destructive",
-        });
-      }
-    }
+    setPendingChanges(true);
   };
 
   // Handle field update
-  const handleFieldUpdate = async (
-    fieldId: string,
-    updates: Partial<FormField>,
-  ) => {
+  const handleFieldUpdate = (fieldId: string, updates: Partial<FormField>) => {
     const index = fields.findIndex((field) => field.id === fieldId);
     if (index === -1) return;
 
     const newFields = [...fields];
     newFields[index] = { ...newFields[index], ...updates };
     setFields(newFields);
-
-    // If the form is saved in the database, update the field
-    if (formId) {
-      try {
-        await updateFormField(fieldId, updates);
-      } catch (error) {
-        console.error("Error updating field:", error);
-        toast({
-          title: "Error",
-          description: "Failed to update field",
-          variant: "destructive",
-        });
-      }
-    }
+    setPendingChanges(true);
   };
 
   // Handle form drop
@@ -252,8 +292,9 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
     if (fieldData) {
       try {
         const field = JSON.parse(fieldData);
+        // Ensure we're using a proper UUID
         const newField: FormField = {
-          id: `field-${Date.now()}`,
+          id: crypto.randomUUID(),
           type: field.id,
           label: field.name,
           placeholder: `Enter ${field.name.toLowerCase()}`,
@@ -271,6 +312,7 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
         };
 
         setFields([...fields, newField]);
+        setPendingChanges(true);
       } catch (error) {
         console.error("Error adding field:", error);
       }
@@ -280,7 +322,7 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
   // Handle add field
   const handleAddField = () => {
     const newField: FormField = {
-      id: `field-${Date.now()}`,
+      id: crypto.randomUUID(),
       type: "text",
       label: "New Field",
       placeholder: "Enter text",
@@ -290,6 +332,7 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
 
     setFields([...fields, newField]);
     setSelectedFieldId(newField.id);
+    setPendingChanges(true);
   };
 
   // Handle preview form
@@ -326,8 +369,8 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
   const handleSaveForm = async () => {
     console.log("Save button clicked in FormBuilderCanvas");
     try {
-      if (!companyId || !userId) {
-        console.error("Missing companyId or userId", { companyId, userId });
+      if (!userId) {
+        console.error("Missing userId", { userId });
         toast({
           title: "Error",
           description: "You must be logged in to save a form",
@@ -336,10 +379,95 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
         return;
       }
 
+      // Check if we're online
+      if (!isOnline) {
+        // Store form data locally
+        const formData = {
+          title: formTitle,
+          description: formDescription,
+          fields: fields,
+          lastModified: new Date().toISOString(),
+          formId: formId,
+        };
+
+        localStorage.setItem("pendingFormData", JSON.stringify(formData));
+
+        toast({
+          title: "Offline Mode",
+          description: "Form saved locally and will sync when online",
+        });
+        setPendingChanges(false);
+        return;
+      }
+
+      if (!companyId) {
+        console.log("No company ID found, creating a default company");
+        // Create a default company if none exists
+        const { data: newCompany, error: companyError } = await supabase
+          .from("companies")
+          .insert([
+            {
+              name: "My Company",
+              created_by: userId,
+              domain: "default.com",
+              updated_at: new Date().toISOString(),
+            },
+          ])
+          .select()
+          .single();
+
+        if (companyError) {
+          console.error("Error creating company:", companyError);
+          toast({
+            title: "Error",
+            description: "Failed to create a company. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Associate user with the new company
+        const { error: memberError } = await supabase
+          .from("company_members")
+          .insert([
+            {
+              user_id: userId,
+              company_id: newCompany.id,
+              role: "Owner/Admin",
+              is_active: true,
+            },
+          ]);
+
+        if (memberError) {
+          console.error("Error creating company member:", memberError);
+          toast({
+            title: "Error",
+            description:
+              "Failed to associate you with the company. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setCompanyId(newCompany.id);
+      }
+
       setIsSaving(true);
 
       try {
         let savedFormId = formId;
+
+        // Ensure all fields have valid UUIDs before saving
+        const fieldsWithUUIDs = fields.map((field) => ({
+          ...field,
+          id:
+            field.id.includes("-") && field.id.length === 36
+              ? field.id // Already a UUID
+              : crypto.randomUUID(), // Generate new UUID
+        }));
+
+        // Update local state with proper UUIDs
+        setFields(fieldsWithUUIDs);
 
         // If no form ID, create a new form
         if (!savedFormId) {
@@ -356,8 +484,8 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
           setFormId(savedFormId);
 
           // Create form fields
-          if (fields.length > 0) {
-            const fieldsToCreate = fields.map((field, index) => ({
+          if (fieldsWithUUIDs.length > 0) {
+            const fieldsToCreate = fieldsWithUUIDs.map((field, index) => ({
               ...convertFieldToDbFormat(field, index),
               form_id: savedFormId,
             }));
@@ -365,20 +493,55 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
             await createFormFields(savedFormId, fieldsToCreate);
           }
         } else {
-          // Update existing form
+          // For existing forms, we need to handle updates, deletions, and additions
+
+          // 1. First, get existing fields from the database
+          const { data: existingFields, error: fieldsError } = await supabase
+            .from("form_fields")
+            .select("id")
+            .eq("form_id", savedFormId);
+
+          if (fieldsError) throw fieldsError;
+
+          // 2. Update the form metadata
           await updateForm(savedFormId, {
             title: formTitle,
             description: formDescription,
             updated_at: new Date().toISOString(),
           });
 
-          // Update existing fields
-          // This is simplified - in a real app you'd need to handle field creation, updates, and deletions
-          for (const field of fields) {
-            await updateFormField(
-              field.id,
-              convertFieldToDbFormat(field, field.order_index),
-            );
+          // 3. Find fields to delete (fields in DB but not in current state)
+          const currentFieldIds = new Set(fieldsWithUUIDs.map((f) => f.id));
+          const fieldsToDelete = existingFields
+            .filter((f) => !currentFieldIds.has(f.id))
+            .map((f) => f.id);
+
+          // 4. Delete removed fields
+          for (const fieldId of fieldsToDelete) {
+            await deleteFormField(fieldId);
+          }
+
+          // 5. Find existing field IDs
+          const existingFieldIds = new Set(existingFields.map((f) => f.id));
+
+          // 6. Update or create fields
+          for (let i = 0; i < fieldsWithUUIDs.length; i++) {
+            const field = fieldsWithUUIDs[i];
+            const fieldData = convertFieldToDbFormat(field, i);
+
+            if (existingFieldIds.has(field.id)) {
+              // Update existing field
+              await updateFormField(field.id, fieldData);
+            } else {
+              // Create new field
+              await createFormFields(savedFormId, [
+                {
+                  ...fieldData,
+                  form_id: savedFormId,
+                  id: field.id,
+                },
+              ]);
+            }
           }
         }
 
@@ -386,6 +549,7 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
           title: "Success",
           description: "Form saved successfully",
         });
+        setPendingChanges(false);
 
         // Navigate to the form builder with the form ID
         if (!formId) {
@@ -509,6 +673,8 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
           canRedo={canRedo}
           onUndo={() => {}}
           onRedo={() => {}}
+          isOnline={isOnline}
+          hasPendingChanges={pendingChanges}
         />
 
         <div className="flex-1 flex overflow-hidden">

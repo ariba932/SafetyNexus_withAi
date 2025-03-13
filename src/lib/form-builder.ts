@@ -134,10 +134,22 @@ export const createFormFields = async (
   formId: string,
   fields: Omit<FormField, "id" | "created_at" | "updated_at">[],
 ) => {
-  const fieldsWithFormId = fields.map((field) => ({
-    ...field,
-    form_id: formId,
-  }));
+  // Ensure all fields have valid UUIDs
+  const fieldsWithFormId = fields.map((field) => {
+    // Make sure the ID is a valid UUID
+    const fieldId = field.id;
+    const isValidUUID =
+      typeof fieldId === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        fieldId,
+      );
+
+    return {
+      ...field,
+      form_id: formId,
+      id: isValidUUID ? fieldId : crypto.randomUUID(),
+    };
+  });
 
   const { data, error } = await supabase
     .from("form_fields")

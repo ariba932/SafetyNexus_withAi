@@ -24,7 +24,7 @@ interface CanvasDropZoneProps {
 const CanvasDropZone: React.FC<CanvasDropZoneProps> = ({
   fields = [
     {
-      id: "1",
+      id: crypto.randomUUID(),
       type: "text",
       label: "Full Name",
       placeholder: "Enter your full name",
@@ -32,7 +32,7 @@ const CanvasDropZone: React.FC<CanvasDropZoneProps> = ({
       order_index: 0,
     },
     {
-      id: "2",
+      id: crypto.randomUUID(),
       type: "email",
       label: "Email Address",
       placeholder: "Enter your email",
@@ -40,7 +40,7 @@ const CanvasDropZone: React.FC<CanvasDropZoneProps> = ({
       order_index: 1,
     },
     {
-      id: "3",
+      id: crypto.randomUUID(),
       type: "select",
       label: "Department",
       options: [
@@ -51,7 +51,7 @@ const CanvasDropZone: React.FC<CanvasDropZoneProps> = ({
       order_index: 2,
     },
     {
-      id: "4",
+      id: crypto.randomUUID(),
       type: "textarea",
       label: "Additional Comments",
       placeholder: "Enter any additional information",

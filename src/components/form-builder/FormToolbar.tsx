@@ -24,7 +24,10 @@ import {
   Redo,
   Copy,
   Trash2,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface FormToolbarProps {
   formTitle?: string;
@@ -52,7 +55,9 @@ const FormToolbar = ({
   onRedo = () => {},
   onDuplicate = () => {},
   onDelete = () => {},
-}: FormToolbarProps) => {
+  isOnline = navigator.onLine,
+  hasPendingChanges = false,
+}: FormToolbarProps & { isOnline?: boolean; hasPendingChanges?: boolean }) => {
   console.log("FormToolbar rendered");
   const [title, setTitle] = useState(formTitle);
 
@@ -127,11 +132,11 @@ const FormToolbar = ({
           variant="outline"
           size="sm"
           onClick={handleSaveClick}
-          className="flex items-center"
+          className={`flex items-center ${hasPendingChanges ? "bg-amber-100 border-amber-300 dark:bg-amber-900 dark:border-amber-700" : ""}`}
           type="button"
         >
           <Save className="h-4 w-4 mr-2" />
-          Save
+          {hasPendingChanges ? "Save*" : "Save"}
         </Button>
 
         <Button
@@ -140,6 +145,7 @@ const FormToolbar = ({
           onClick={handlePreviewClick}
           className="flex items-center"
           type="button"
+          disabled={!isOnline}
         >
           <Eye className="h-4 w-4 mr-2" />
           Preview
@@ -151,10 +157,20 @@ const FormToolbar = ({
           onClick={handlePublishClick}
           className="flex items-center"
           type="button"
+          disabled={!isOnline || hasPendingChanges}
         >
           <Play className="h-4 w-4 mr-2" />
           Publish
         </Button>
+
+        {!isOnline && (
+          <Badge
+            variant="outline"
+            className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-300 dark:border-red-700"
+          >
+            Offline Mode
+          </Badge>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
