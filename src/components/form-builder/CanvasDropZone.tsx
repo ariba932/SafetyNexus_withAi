@@ -10,15 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-interface FormField {
-  id: string;
-  type: string;
-  label: string;
-  placeholder?: string;
-  required?: boolean;
-  options?: { label: string; value: string }[];
-}
+import { FormField } from "@/lib/form-builder";
 
 interface CanvasDropZoneProps {
   fields?: FormField[];
@@ -26,6 +18,7 @@ interface CanvasDropZoneProps {
   onFieldDelete?: (fieldId: string) => void;
   onFieldMove?: (fieldId: string, direction: "up" | "down") => void;
   onDrop?: (event: React.DragEvent) => void;
+  onAddField?: () => void;
 }
 
 const CanvasDropZone: React.FC<CanvasDropZoneProps> = ({
@@ -36,6 +29,7 @@ const CanvasDropZone: React.FC<CanvasDropZoneProps> = ({
       label: "Full Name",
       placeholder: "Enter your full name",
       required: true,
+      order_index: 0,
     },
     {
       id: "2",
@@ -43,6 +37,7 @@ const CanvasDropZone: React.FC<CanvasDropZoneProps> = ({
       label: "Email Address",
       placeholder: "Enter your email",
       required: true,
+      order_index: 1,
     },
     {
       id: "3",
@@ -53,18 +48,21 @@ const CanvasDropZone: React.FC<CanvasDropZoneProps> = ({
         { label: "Quality Assurance", value: "quality" },
         { label: "Environment", value: "environment" },
       ],
+      order_index: 2,
     },
     {
       id: "4",
       type: "textarea",
       label: "Additional Comments",
       placeholder: "Enter any additional information",
+      order_index: 3,
     },
   ],
   onFieldSelect = () => {},
   onFieldDelete = () => {},
   onFieldMove = () => {},
   onDrop = () => {},
+  onAddField = () => {},
 }) => {
   const [activeField, setActiveField] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -87,6 +85,19 @@ const CanvasDropZone: React.FC<CanvasDropZoneProps> = ({
   const handleFieldClick = (fieldId: string) => {
     setActiveField(fieldId);
     onFieldSelect(fieldId);
+  };
+
+  // Get layout class based on field layout
+  const getLayoutClass = (layout?: string) => {
+    switch (layout) {
+      case "half":
+        return "w-1/2";
+      case "third":
+        return "w-1/3";
+      case "full":
+      default:
+        return "w-full";
+    }
   };
 
   // Render different field types
@@ -225,119 +236,123 @@ const CanvasDropZone: React.FC<CanvasDropZoneProps> = ({
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="flex flex-wrap -mx-2">
             {fields.map((field) => (
-              <Card
+              <div
                 key={field.id}
-                className={cn(
-                  "p-4 cursor-pointer hover:shadow-md transition-shadow",
-                  activeField === field.id ? "ring-2 ring-primary" : "",
-                )}
-                onClick={() => handleFieldClick(field.id)}
+                className={cn("px-2 mb-4", getLayoutClass(field.layout))}
               >
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center">
-                    <span className="text-xs font-medium px-2 py-1 bg-muted rounded mr-2">
-                      {field.type}
-                    </span>
-                    <h4 className="text-sm font-medium">{field.label}</h4>
+                <Card
+                  className={cn(
+                    "p-4 cursor-pointer hover:shadow-md transition-shadow h-full",
+                    activeField === field.id ? "ring-2 ring-primary" : "",
+                  )}
+                  onClick={() => handleFieldClick(field.id)}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center">
+                      <span className="text-xs font-medium px-2 py-1 bg-muted rounded mr-2">
+                        {field.type}
+                      </span>
+                      <h4 className="text-sm font-medium">{field.label}</h4>
+                    </div>
+                    <div className="flex space-x-1">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onFieldMove(field.id, "up");
+                              }}
+                            >
+                              <ArrowUp className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Move Up</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onFieldMove(field.id, "down");
+                              }}
+                            >
+                              <ArrowDown className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Move Down</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onFieldSelect(field.id);
+                              }}
+                            >
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit Properties</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onFieldDelete(field.id);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Delete Field</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                   </div>
-                  <div className="flex space-x-1">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onFieldMove(field.id, "up");
-                            }}
-                          >
-                            <ArrowUp className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Move Up</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onFieldMove(field.id, "down");
-                            }}
-                          >
-                            <ArrowDown className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Move Down</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onFieldSelect(field.id);
-                            }}
-                          >
-                            <Settings className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Edit Properties</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onFieldDelete(field.id);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Delete Field</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </div>
-                <Separator className="my-2" />
-                {renderField(field)}
-              </Card>
+                  <Separator className="my-2" />
+                  {renderField(field)}
+                </Card>
+              </div>
             ))}
           </div>
         )}
       </div>
 
       <div className="p-4 border-t">
-        <Button className="w-full" variant="outline">
+        <Button className="w-full" variant="outline" onClick={onAddField}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Add New Field
         </Button>

@@ -53,7 +53,24 @@ const FormToolbar = ({
   onDuplicate = () => {},
   onDelete = () => {},
 }: FormToolbarProps) => {
+  console.log("FormToolbar rendered");
   const [title, setTitle] = useState(formTitle);
+
+  // Direct click handlers without preventDefault to avoid blocking default button behavior
+  const handleSaveClick = () => {
+    console.log("Save button clicked directly");
+    onSave();
+  };
+
+  const handlePreviewClick = () => {
+    console.log("Preview button clicked directly");
+    onPreview();
+  };
+
+  const handlePublishClick = () => {
+    console.log("Publish button clicked directly");
+    onPublish();
+  };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
@@ -106,31 +123,35 @@ const FormToolbar = ({
       </div>
 
       <div className="flex items-center space-x-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={onSave}>
-                <Save className="h-4 w-4 mr-2" />
-                Save
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Save form</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSaveClick}
+          className="flex items-center"
+          type="button"
+        >
+          <Save className="h-4 w-4 mr-2" />
+          Save
+        </Button>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={onPreview}>
-                <Eye className="h-4 w-4 mr-2" />
-                Preview
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Preview form</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handlePreviewClick}
+          className="flex items-center"
+          type="button"
+        >
+          <Eye className="h-4 w-4 mr-2" />
+          Preview
+        </Button>
 
-        <Button variant="default" size="sm" onClick={onPublish}>
+        <Button
+          variant="default"
+          size="sm"
+          onClick={handlePublishClick}
+          className="flex items-center"
+          type="button"
+        >
           <Play className="h-4 w-4 mr-2" />
           Publish
         </Button>

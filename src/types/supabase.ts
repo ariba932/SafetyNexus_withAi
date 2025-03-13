@@ -71,6 +71,169 @@ export type Database = {
           },
         ]
       }
+      form_fields: {
+        Row: {
+          created_at: string | null
+          default_value: string | null
+          description: string | null
+          field_type: string
+          form_id: string | null
+          hidden: boolean | null
+          id: string
+          label: string
+          layout: string | null
+          options: Json | null
+          order_index: number
+          parent_id: string | null
+          placeholder: string | null
+          readonly: boolean | null
+          required: boolean | null
+          updated_at: string | null
+          validation: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_value?: string | null
+          description?: string | null
+          field_type: string
+          form_id?: string | null
+          hidden?: boolean | null
+          id?: string
+          label: string
+          layout?: string | null
+          options?: Json | null
+          order_index: number
+          parent_id?: string | null
+          placeholder?: string | null
+          readonly?: boolean | null
+          required?: boolean | null
+          updated_at?: string | null
+          validation?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          default_value?: string | null
+          description?: string | null
+          field_type?: string
+          form_id?: string | null
+          hidden?: boolean | null
+          id?: string
+          label?: string
+          layout?: string | null
+          options?: Json | null
+          order_index?: number
+          parent_id?: string | null
+          placeholder?: string | null
+          readonly?: boolean | null
+          required?: boolean | null
+          updated_at?: string | null
+          validation?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_fields_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_fields_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "form_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_submissions: {
+        Row: {
+          data: Json
+          device_info: Json | null
+          form_id: string | null
+          id: string
+          location: Json | null
+          status: string | null
+          submitted_at: string | null
+          submitted_by: string | null
+        }
+        Insert: {
+          data: Json
+          device_info?: Json | null
+          form_id?: string | null
+          id?: string
+          location?: Json | null
+          status?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
+        }
+        Update: {
+          data?: Json
+          device_info?: Json | null
+          form_id?: string | null
+          id?: string
+          location?: Json | null
+          status?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_submissions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forms: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          published: boolean | null
+          status: string | null
+          title: string
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          published?: boolean | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          published?: boolean | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forms_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -305,7 +468,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

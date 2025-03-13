@@ -96,6 +96,7 @@ const Home: React.FC<HomeProps> = ({ className }) => {
                 }
               />
               <Route path="/form-builder" element={<FormBuilderCanvas />} />
+              <Route path="/form-builder/:id" element={<FormBuilderCanvas />} />
               <Route
                 path="/inspections"
                 element={

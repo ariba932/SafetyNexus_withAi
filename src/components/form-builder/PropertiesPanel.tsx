@@ -18,6 +18,7 @@ import {
 } from "../ui/accordion";
 import { Label } from "../ui/label";
 import { X, AlignLeft, Type, Check, AlertCircle } from "lucide-react";
+import FieldLayout from "./FieldLayout";
 
 interface PropertiesPanelProps {
   selectedField?: {
@@ -33,7 +34,14 @@ interface PropertiesPanelProps {
       minLength?: number;
       maxLength?: number;
       pattern?: string;
+      min?: number;
+      max?: number;
     };
+    hidden?: boolean;
+    readonly?: boolean;
+    defaultValue?: string;
+    className?: string;
+    layout?: "full" | "half" | "third";
   };
   onUpdateField?: (fieldId: string, updates: any) => void;
 }
@@ -51,6 +59,7 @@ const PropertiesPanel = ({
       minLength: 0,
       maxLength: 100,
     },
+    layout: "full" as "full" | "half" | "third",
   },
   onUpdateField = () => {},
 }: PropertiesPanelProps) => {
@@ -70,6 +79,12 @@ const PropertiesPanel = ({
           [key]: value,
         },
       });
+    }
+  };
+
+  const handleLayoutChange = (layout: "full" | "half" | "third") => {
+    if (onUpdateField && selectedField.id) {
+      onUpdateField(selectedField.id, { layout });
     }
   };
 
@@ -150,6 +165,14 @@ const PropertiesPanel = ({
                     </SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Field Layout</Label>
+                <FieldLayout
+                  layout={selectedField.layout || "full"}
+                  onLayoutChange={handleLayoutChange}
+                />
               </div>
 
               <div className="space-y-2">
